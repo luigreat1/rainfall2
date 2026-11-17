@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Помоги Луи собрать коллекцию небесных артефактов</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: linear-gradient(180deg, #4facfe 0%, #8fd3f4 55%, #d4fc79 92%, #96e6a1 100%);
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    /* Анимация плывущих облаков */
+    @keyframes floatCloudSlow {
+      0%, 100% { transform: translateX(0px) translateY(0px); }
+      50% { transform: translateX(18px) translateY(-5px); }
+    }
+    @keyframes floatCloudReverse {
+      0%, 100% { transform: translateX(0px) translateY(0px); }
+      50% { transform: translateX(-20px) translateY(4px); }
+    }
+    .cloud-float-1 { animation: floatCloudSlow 7s ease-in-out infinite; }
+    .cloud-float-2 { animation: floatCloudReverse 9s ease-in-out infinite; }
+
+    /* Анимации Луи */
+    @keyframes louisIdle {
+      0%, 100% { transform: translateY(0px) scale(1, 1); }
+      50% { transform: translateY(-4px) scale(1.01, 0.99); }
+    }
+    @keyframes louisHappy {
+      0% { transform: translateY(0px) scale(1, 1); }
+      30% { transform: translateY(-18px) scale(0.95, 1.06); }
+      60% { transform: translateY(2px) scale(1.05, 0.95); }
+      100% { transform: translateY(0px) scale(1, 1); }
+    }
+    @keyframes louisSurprised {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-4deg); }
+      40% { transform: rotate(4deg); }
+      60% { transform: rotate(-3deg); }
+      80% { transform: rotate(3deg); }
+    }
+    @keyframes questionBob {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(6deg); }
+    }
+
+    .louis-idle { animation: louisIdle 3.2s ease-in-out infinite; transform-origin: bottom center; }
+    .louis-happy { animation: louisHappy 0.55s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: bottom center; }
+    .louis-surprised { animation: louisSurprised 0.45s ease-in-out; transform-origin: bottom center; }
+    .question-mark-anim { animation: questionBob 2.6s ease-in-out infinite; transform-origin: center; }
+
+    /* Падающие объекты */
+    .falling-item {
+      position: absolute;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: transform 0.1s ease-out;
+      filter: drop-shadow(0 6px 10px rgba(0, 60, 110, 0.2));
+      z-index: 20;
+    }
+    .falling-item:active {
+      transform: scale(0.88);
+    }
+
+    /* Всплывающие искры и текст */
+    @keyframes popFade {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+      50% { opacity: 1; transform: translate(-50%, -110%) scale(1.15); }
+      100% { opacity: 0; transform: translate(-50%, -160%) scale(0.9); }
+    }
+    .floating-feedback {
+      position: absolute;
+      pointer-events: none;
+      font-weight: 900;
+      font-size: 1.15rem;
+      z-index: 40;
+      animation: popFade 0.85s ease-out forwards;
+      text-shadow: 0 2px 6px rgba(255,255,255,0.9);
+      white-space: nowrap;
+    }
+
+    /* Речевое облачко Луи */
+    .speech-bubble {
+      position: relative;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1.25rem;
+      box-shadow: 0 8px 24px rgba(15, 76, 129, 0.16);
+      border: 2px solid #84cc16;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: #84cc16 transparent transparent transparent;
+    }
+
+    /* Полет собранного артефакта в коллекцию */
+    .flying-clone {
+      position: fixed;
+      pointer-events: none;
+      z-index: 60;
+      transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Пульсация слота при получении артефакта */
+    @keyframes slotPulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.16); background-color: #ecfccb; }
+      100% { transform: scale(1); }
+    }
+    .slot-pulse {
+      animation: slotPulse 0.45s ease-out;
+    }
+
+    /* Праздничное конфетти */
+    @keyframes confettiFall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0.8; }
+    }
+    .confetti-piece {
+      position: fixed;
+      top: -20px;
+      z-index: 70;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+    }
+
+    /* Магическая трансформация цвета Луи */
+    @keyframes louisMorphGlow {
+      0% { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.2)) brightness(1); transform: scale(1); }
+      40% { filter: drop-shadow(0 0 28px rgba(192, 132, 252, 0.95)) brightness(1.22); transform: scale(1.07); }
+      70% { filter: drop-shadow(0 0 22px rgba(168, 85, 247, 0.8)) brightness(1.1); transform: scale(0.98); }
+      100% { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.2)) brightness(1); transform: scale(1); }
+    }
+    .louis-morphing {
+      animation: louisMorphGlow 0.95s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Прыгающая по траве лягушка */
+    .hopping-frog {
+      position: fixed;
+      z-index: 25;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 8px rgba(0, 50, 20, 0.25));
+      will-change: transform, left, top;
+    }
+
+    #louisSvg stop,
+    #louisSvg path,
+    #louisSvg circle,
+    #louisSvg rect,
+    #louisSvg ellipse {
+      transition: stop-color 0.85s ease, fill 0.85s ease, stroke 0.85s ease;
+    }
+  </style>
+</head>
+<body class="flex flex-col justify-between select-none">
+
+  <!-- Декоративное солнце в углу -->
+  <div class="fixed -top-12 -right-12 w-40 h-40 sm:w-52 sm:h-52 rounded-full bg-yellow-200/60 blur-xl pointer-events-none"></div>
+  <div class="fixed top-4 right-4 sm:top-6 sm:right-8 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-yellow-200 to-amber-400 shadow-lg shadow-amber-300/50 pointer-events-none opacity-90"></div>
+
+  <!-- Верхняя панель: Заголовок, Индикатор раунда, Фиолетовость и Коллекция -->
+  <header class="relative z-30 w-full max-w-4xl mx-auto px-3 pt-2.5 sm:px-6 sm:pt-4">
+    <div class="bg-white/85 backdrop-blur-md rounded-3xl shadow-xl border-2 border-white/90 p-2.5 sm:p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span id="roundBadgeIcon" class="inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-lime-500 text-white font-black text-sm sm:text-base shadow-sm shrink-0 transition-colors duration-700">1</span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <h1 class="text-xs sm:text-base font-black text-sky-950 leading-tight truncate">Раунд <span id="roundNumberText">1</span> <span class="text-sky-600 font-extrabold">из 5</span></h1>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold bg-purple-100 text-purple-800 border border-purple-200">
+                <span>Фиолетовость:</span>
+                <span id="purplePercentText" class="font-black text-purple-950">0%</span>
+              </span>
+            </div>
+            <p class="text-[11px] sm:text-xs font-bold text-sky-700 truncate" id="modeSubtitle">Нажимай на капли, снежинки и градины!</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <!-- Мини-шкала фиолетовости на десктопе -->
+          <div class="hidden md:flex flex-col w-28 mr-1">
+            <div class="flex justify-between text-[10px] font-extrabold text-purple-900 mb-0.5">
+              <span>Трансформация</span>
+              <span id="purpleBarLabel">0%</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-lime-200 overflow-hidden border border-purple-200">
+              <div id="purpleProgressBar" class="h-full rounded-full transition-all duration-700" style="width: 0%; background: linear-gradient(90deg, #84cc16, #9333ea);"></div>
+            </div>
+          </div>
+
+          <button id="helpBtn" title="Правила игры" class="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-sky-100 hover:bg-sky-200 active:scale-95 text-sky-800 font-black text-sm sm:text-base flex items-center justify-center transition shadow-sm border border-sky-200">
+            ?
+          </button>
+          <button id="soundToggleBtn" title="Включить или выключить звук" class="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-800 flex items-center justify-center transition shadow-sm border border-amber-200">
+            <!-- Иконка звука SVG -->
+            <svg id="soundOnIcon" class="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg id="soundOffIcon" class="w-4 h-4 sm:w-5 sm:h-5 hidden text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="23" y1="9" x2="17" y2="15"></line>
+              <line x1="17" y1="9" x2="23" y2="15"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Слоты коллекции 3 артефактов -->
+      <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <!-- Слот 1: Капля дождя -->
+        <div id="slot-drop" class="bg-sky-50/90 border-2 border-sky-200 rounded-2xl p-2 sm:px-3 sm:py-2 flex items-center justify-between transition">
+          <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 48 48">
+                <defs>
+                  <linearGradient id="uiDropGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#7dd3fc"/>
+                    <stop offset="55%" stop-color="#0284c7"/>
+                    <stop offset="100%" stop-color="#0369a1"/>
+                  </linearGradient>
+                </defs>
+                <path d="M24 5 C24 5 10 21 10 31 C10 38.7 16.3 44 24 44 C31.7 44 38 38.7 38 31 C38 21 24 5 24 5 Z" fill="url(#uiDropGrad)"/>
+                <ellipse cx="18" cy="28" rx="2.8" ry="6" transform="rotate(-18 18 28)" fill="#e0f2fe" opacity="0.85"/>
+              </svg>
+            </div>
+            <div class="truncate">
+              <div class="text-xs sm:text-sm font-extrabold text-sky-950 truncate">Капля</div>
+              <div class="w-full bg-sky-200/80 h-1.5 rounded-full mt-1 overflow-hidden">
+                <div id="bar-drop" class="bg-sky-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <span id="count-drop" class="ml-1.5 text-xs sm:text-base font-black text-sky-700 bg-white px-2 py-0.5 rounded-xl border border-sky-200 shrink-0">0/5</span>
+        </div>
+
+        <!-- Слот 2: Снежинка -->
+        <div id="slot-snow" class="bg-indigo-50/90 border-2 border-indigo-200 rounded-2xl p-2 sm:px-3 sm:py-2 flex items-center justify-between transition">
+          <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 48 48" fill="none">
+                <g stroke="#4f46e5" stroke-width="3" stroke-linecap="round">
+                  <line x1="24" y1="5" x2="24" y2="43"/>
+                  <line x1="7.5" y1="14.5" x2="40.5" y2="33.5"/>
+                  <line x1="40.5" y1="14.5" x2="7.5" y2="33.5"/>
+                  <polyline points="19,10 24,15 29,10"/>
+                  <polyline points="19,38 24,33 29,38"/>
+                  <polyline points="10,20 16,19 14,13"/>
+                  <polyline points="38,28 32,29 34,35"/>
+                  <polyline points="34,13 32,19 38,20"/>
+                  <polyline points="14,35 16,29 10,28"/>
+                </g>
+                <circle cx="24" cy="24" r="3.5" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="truncate">
+              <div class="text-xs sm:text-sm font-extrabold text-indigo-950 truncate">Снежинка</div>
+              <div class="w-full bg-indigo-200/80 h-1.5 rounded-full mt-1 overflow-hidden">
+                <div id="bar-snow" class="bg-indigo-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <span id="count-snow" class="ml-1.5 text-xs sm:text-base font-black text-indigo-700 bg-white px-2 py-0.5 rounded-xl border border-indigo-200 shrink-0">0/5</span>
+        </div>
+
+        <!-- Слот 3: Градина -->
+        <div id="slot-hail" class="bg-cyan-50/90 border-2 border-cyan-200 rounded-2xl p-2 sm:px-3 sm:py-2 flex items-center justify-between transition">
+          <div class="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-cyan-100 flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6 sm:w-7 sm:h-7" viewBox="0 0 48 48">
+                <defs>
+                  <radialGradient id="uiHailGrad" cx="35%" cy="30%" r="65%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="45%" stop-color="#a5f3fc"/>
+                    <stop offset="85%" stop-color="#06b6d4"/>
+                    <stop offset="100%" stop-color="#0e7490"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="24" cy="24" r="16" fill="url(#uiHailGrad)" stroke="#0891b2" stroke-width="1.5"/>
+                <polygon points="24,11 32,18 29,31 18,32 14,20" fill="#ffffff" opacity="0.35"/>
+                <circle cx="18" cy="17" r="3" fill="#ffffff" opacity="0.9"/>
+              </svg>
+            </div>
+            <div class="truncate">
+              <div class="text-xs sm:text-sm font-extrabold text-cyan-950 truncate">Градина</div>
+              <div class="w-full bg-cyan-200/80 h-1.5 rounded-full mt-1 overflow-hidden">
+                <div id="bar-hail" class="bg-cyan-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <span id="count-hail" class="ml-1.5 text-xs sm:text-base font-black text-cyan-700 bg-white px-2 py-0.5 rounded-xl border border-cyan-200 shrink-0">0/5</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Облака в верхней части неба, откуда падают объекты -->
+  <div class="pointer-events-none fixed top-24 sm:top-28 left-0 w-full z-10 flex justify-around px-2 opacity-95">
+    <svg class="w-32 sm:w-48 h-16 sm:h-24 cloud-float-1" viewBox="0 0 200 90">
+      <path d="M35 72 H165 C180 72 190 61 190 48 C190 36 181 26 169 25 C165 11 151 2 135 2 C122 2 110 9 104 19 C98 14 90 11 81 11 C64 11 50 23 48 39 C33 40 20 51 20 63 C20 69 27 72 35 72 Z" fill="#ffffff" opacity="0.92"/>
+    </svg>
+    <svg class="w-36 sm:w-56 h-20 sm:h-28 cloud-float-2 hidden sm:block" viewBox="0 0 200 90">
+      <path d="M35 72 H165 C180 72 190 61 190 48 C190 36 181 26 169 25 C165 11 151 2 135 2 C122 2 110 9 104 19 C98 14 90 11 81 11 C64 11 50 23 48 39 C33 40 20 51 20 63 C20 69 27 72 35 72 Z" fill="#ffffff" opacity="0.88"/>
+    </svg>
+    <svg class="w-32 sm:w-48 h-16 sm:h-24 cloud-float-1" viewBox="0 0 200 90">
+      <path d="M35 72 H165 C180 72 190 61 190 48 C190 36 181 26 169 25 C165 11 151 2 135 2 C122 2 110 9 104 19 C98 14 90 11 81 11 C64 11 50 23 48 39 C33 40 20 51 20 63 C20 69 27 72 35 72 Z" fill="#ffffff" opacity="0.92"/>
+    </svg>
+  </div>
+
+  <!-- Игровое поле для падающих объектов -->
+  <main id="gameArea" class="fixed inset-0 z-20 overflow-hidden"></main>
+
+  <!-- Нижняя сцена: зеленый холм и персонаж Луи -->
+  <footer class="relative z-10 w-full pointer-events-none flex flex-col items-center justify-end">
+    <!-- Мягкий зеленый холм -->
+    <div class="w-[130%] -ml-[15%] h-24 sm:h-32 bg-gradient-to-t from-lime-600 via-lime-500 to-lime-400 rounded-t-[100%] shadow-inner border-t-4 border-lime-300/80"></div>
+
+    <div class="absolute bottom-4 sm:bottom-6 flex flex-col items-center">
+      <!-- Речевое облачко Луи -->
+      <div id="louisSpeech" class="speech-bubble px-3.5 py-2 mb-2 max-w-[270px] sm:max-w-xs text-center text-xs sm:text-sm font-extrabold text-sky-950">
+        Хм... Помоги мне собрать небесные артефакты!
+      </div>
+
+      <!-- SVG Луи с динамическими градиентами и обводками для трансформации в фиолетовый -->
+      <div id="louisContainer" class="louis-idle w-44 h-56 sm:w-52 sm:h-64 drop-shadow-xl">
+        <svg id="louisSvg" viewBox="0 0 260 330" class="w-full h-full overflow-visible">
+          <defs>
+            <!-- Градиент тела Луи -->
+            <radialGradient id="louisBodyGrad" cx="42%" cy="38%" r="62%">
+              <stop id="bodyStop0" offset="0%" stop-color="#a3e635"/>
+              <stop id="bodyStop1" offset="65%" stop-color="#84cc16"/>
+              <stop id="bodyStop2" offset="100%" stop-color="#4d7c0f"/>
+            </radialGradient>
+            <!-- Градиент стебельков и ободков глаз -->
+            <linearGradient id="louisStalkGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop id="stalkStop0" offset="0%" stop-color="#9be12c"/>
+              <stop id="stalkStop1" offset="100%" stop-color="#5d9412"/>
+            </linearGradient>
+            <!-- Тень под ногами -->
+            <ellipse id="groundShadow" cx="130" cy="312" rx="68" ry="10" fill="#3f6212" opacity="0.28"/>
+          </defs>
+
+          <!-- Тень на траве -->
+          <use href="#groundShadow"/>
+
+          <!-- Знак вопроса справа сверху (меняет цвет вместе с Луи) -->
+          <g id="questionMark" class="question-mark-anim">
+            <path id="qMarkPath" d="M188 46 C188 30 202 22 215 24 C228 26 235 37 232 49 C229 59 218 63 215 71 C214 74 214 77 214 79"
+                  fill="none" stroke="#84cc16" stroke-width="11" stroke-linecap="round"/>
+            <circle id="qMarkDot" cx="214" cy="96" r="6.5" fill="#84cc16"/>
+          </g>
+
+          <!-- Ноги Луи -->
+          <g id="louisLegs" stroke="#4d7c0f" stroke-width="2.5" stroke-linejoin="round">
+            <!-- Левая нога -->
+            <path d="M98 246 L94 294 C83 296 68 303 69 310 C70 315 92 314 103 308 C108 305 107 297 107 292 L111 248 Z" fill="url(#louisStalkGrad)"/>
+            <!-- Правая нога -->
+            <path d="M148 248 L151 292 C151 297 150 305 155 308 C166 314 192 314 193 308 C194 301 176 295 164 294 L160 246 Z" fill="url(#louisStalkGrad)"/>
+          </g>
+
+          <!-- Левая рука (опущена вниз с 4 пальчиками) -->
+          <g id="louisLeftArm" stroke="#4d7c0f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M77 166 C61 190 54 224 55 248 C48 252 44 261 46 268 C47 271 51 270 52 266 C51 273 53 278 56 278 C59 278 60 272 60 268 C60 274 63 278 66 278 C69 277 69 271 68 266 C71 270 75 271 77 268 C79 264 75 254 67 248 C66 225 73 197 86 177 Z" fill="url(#louisStalkGrad)"/>
+          </g>
+
+          <!-- Основное овальное/грушевидное тело и стебельки глаз -->
+          <path id="louisBodyPath" d="M89 144
+                   C78 130 68 122 61 116
+                   L75 107
+                   C83 116 93 126 105 133
+                   C114 129 124 127 134 127
+                   C136 112 135 97 131 85
+                   L147 85
+                   C144 97 144 112 148 128
+                   C179 135 201 164 201 198
+                   C201 235 171 259 132 259
+                   C93 259 66 234 66 197
+                   C66 175 75 156 89 144 Z"
+                fill="url(#louisBodyGrad)" stroke="#4d7c0f" stroke-width="2.8" stroke-linejoin="round"/>
+
+          <!-- Мягкий блик на макушке Луи -->
+          <ellipse id="louisHighlight" cx="122" cy="142" rx="22" ry="7" transform="rotate(-10 122 142)" fill="#d9f99d" opacity="0.45"/>
+
+          <!-- Левый глаз на стебельке -->
+          <g id="leftEyeGroup">
+            <circle id="leftEyeRim" cx="58" cy="96" r="32" fill="url(#louisStalkGrad)" stroke="#4d7c0f" stroke-width="2.6"/>
+            <circle cx="58" cy="96" r="26.5" fill="#ffffff"/>
+            <path d="M35 106 A26.5 26.5 0 0 0 82 104 A28 24 0 0 1 35 106 Z" fill="#e2e8f0"/>
+            <g id="leftPupil">
+              <circle cx="67" cy="85" r="10.5" fill="#0f172a"/>
+              <circle cx="71" cy="80.5" r="3.2" fill="#ffffff"/>
+            </g>
+          </g>
+
+          <!-- Правый глаз на стебельке -->
+          <g id="rightEyeGroup">
+            <circle id="rightEyeRim" cx="141" cy="66" r="33" fill="url(#louisStalkGrad)" stroke="#4d7c0f" stroke-width="2.6"/>
+            <circle cx="141" cy="66" r="27.5" fill="#ffffff"/>
+            <path d="M117 77 A27.5 27.5 0 0 0 166 75 A29 25 0 0 1 117 77 Z" fill="#e2e8f0"/>
+            <g id="rightPupil">
+              <circle cx="151" cy="54" r="11" fill="#0f172a"/>
+              <circle cx="155" cy="49.5" r="3.4" fill="#ffffff"/>
+            </g>
+          </g>
+
+          <!-- Рот и два характерных белых передних зуба -->
+          <g id="louisMouth">
+            <!-- Задумчивый изогнутый рот (по умолчанию) -->
+            <g id="mouthThinking">
+              <path id="mouthLine" d="M98 183 C114 166 146 157 174 160" fill="none" stroke="#2f4809" stroke-width="5.5" stroke-linecap="round"/>
+              <!-- Левый зубик -->
+              <path id="toothLeft" d="M117 171 L133 166 L135 180 C135.5 183 133 185 130 185.5 L122 187 C119 187.5 117 185.5 116.5 182.5 Z"
+                    fill="#ffffff" stroke="#4d7c0f" stroke-width="1.8" stroke-linejoin="round"/>
+              <!-- Правый зубик -->
+              <path id="toothRight" d="M135 165.5 L151 162 L152.5 176 C153 179 150.5 181 147.5 181.5 L139.5 183 C136.5 183.5 134.5 181.5 134 178.5 Z"
+                    fill="#ffffff" stroke="#4d7c0f" stroke-width="1.8" stroke-linejoin="round"/>
+            </g>
+
+            <!-- Радостная улыбка при поимке артефакта -->
+            <g id="mouthHappy" class="hidden">
+              <path id="mouthHappyBg" d="M100 172 Q136 204 172 168" fill="#365314" stroke="#2f4809" stroke-width="4" stroke-linecap="round"/>
+              <rect id="toothHappyL" x="120" y="175" width="14" height="14" rx="4" fill="#ffffff" stroke="#4d7c0f" stroke-width="1.6"/>
+              <rect id="toothHappyR" x="136" y="175" width="14" height="14" rx="4" fill="#ffffff" stroke="#4d7c0f" stroke-width="1.6"/>
+            </g>
+          </g>
+
+          <!-- Правая рука у подбородка в задумчивой позе -->
+          <g id="louisRightArm" stroke="#4d7c0f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+            <path id="rightArmFill" d="M192 174 C211 196 209 218 193 221 C182 223 173 214 167 206" fill="none" stroke="#84cc16" stroke-width="13" stroke-linecap="round"/>
+            <path id="rightArmOutline" d="M192 174 C211 196 209 218 193 221 C182 223 173 214 167 206" fill="none" stroke="#4d7c0f" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M174 198 C164 193 153 190 151 194 C149 198 159 203 168 206 C163 209 164 214 170 215 C167 219 170 223 176 222 C182 221 188 214 185 205 C183 200 178 199 174 198 Z"
+                  fill="url(#louisStalkGrad)"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Модальное окно завершения раунда и трансформации Луи -->
+  <div id="victoryModal" class="fixed inset-0 z-50 bg-sky-950/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 text-center shadow-2xl border-4 border-purple-400 transform transition-all scale-100">
+      <div id="modalTopEmoji" class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-purple-100 text-purple-600 text-3xl sm:text-4xl mb-2.5 shadow-inner">
+        ✨
+      </div>
+      <h2 id="modalTitle" class="text-xl sm:text-2xl font-black text-sky-950 mb-1">Раунд <span id="modalRoundNum">1</span> из 5 пройден!</h2>
+      <p class="text-xs sm:text-sm font-bold text-slate-600 mb-4" id="modalMorphDesc">
+        Небесная магия сработала! Луи становится более фиолетовым!
+      </p>
+
+      <!-- Мини-превью трансформации Луи прямо в окне -->
+      <div class="bg-gradient-to-br from-purple-50 via-indigo-50 to-sky-50 rounded-2xl p-3.5 mb-4 border-2 border-purple-200 flex flex-col items-center">
+        <div class="text-xs font-extrabold text-purple-800 mb-1">
+          Фиолетовость Луи: <span id="modalPrevPercent" class="text-slate-500">0%</span> → <span id="modalNewPercent" class="text-purple-700 font-black text-sm">20%</span>
+        </div>
+        <div id="modalPreviewSlot" class="w-24 h-28 sm:w-28 sm:h-32 flex items-center justify-center my-1">
+          <!-- Сюда клонируется SVG Луи для наглядной трансформации -->
+        </div>
+        <div class="w-full max-w-[220px] h-2.5 bg-purple-200/80 rounded-full overflow-hidden mt-1">
+          <div id="modalPurpleBar" class="h-full rounded-full transition-all duration-700" style="width: 20%; background: linear-gradient(90deg, #84cc16, #9333ea);"></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-2.5 mb-5 border border-slate-200 flex justify-around text-center">
+        <div>
+          <div class="text-lg font-black text-sky-600" id="statDrops">5</div>
+          <div class="text-[11px] font-bold text-slate-500">Капель</div>
+        </div>
+        <div class="w-px bg-slate-200"></div>
+        <div>
+          <div class="text-lg font-black text-indigo-600" id="statSnow">5</div>
+          <div class="text-[11px] font-bold text-slate-500">Снежинок</div>
+        </div>
+        <div class="w-px bg-slate-200"></div>
+        <div>
+          <div class="text-lg font-black text-cyan-600" id="statHail">5</div>
+          <div class="text-[11px] font-bold text-slate-500">Градин</div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button id="nextRoundBtn" class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white font-extrabold text-sm sm:text-base shadow-lg shadow-purple-500/30 transition">
+          Следующий раунд →
+        </button>
+        <button id="restartGameBtn" class="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-extrabold text-xs sm:text-sm border border-slate-300 transition">
+          Сбросить с начала
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно подсказки / старта -->
+  <div id="helpModal" class="fixed inset-0 z-50 bg-sky-950/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border-4 border-sky-300">
+      <h2 class="text-xl sm:text-2xl font-black text-sky-950 mb-2">Как помочь Луи?</h2>
+      <p class="text-sm font-bold text-slate-600 mb-4">
+        Пройди <span class="text-purple-700">5 раундов</span>, нажимая на падающие <span class="text-sky-600">капли</span>, <span class="text-indigo-600">снежинки</span> и <span class="text-cyan-600">градины</span>! После каждого раунда Луи будет становиться всё фиолетовее.
+      </p>
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs sm:text-sm font-bold text-amber-900 mb-5">
+        🍂 Осенние листочки, пёрышки, звёздочки и озорные лягушки — это просто гости с неба, их собирать не нужно!
+      </div>
+      <button id="closeHelpBtn" class="w-full py-3 px-5 rounded-2xl bg-lime-500 hover:bg-lime-600 active:scale-95 text-white font-black text-base shadow-lg shadow-lime-500/30 transition">
+        Понятно, поехали!
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // ЗВУКОВОЙ ДВИЖОК (Web Audio API — без внешних файлов)
+    // =========================================================================
+    class SoundEffects {
+      constructor() {
+        this.enabled = true;
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggle() {
+        this.enabled = !this.enabled;
+        if (this.enabled) this.init();
+        return this.enabled;
+      }
+
+      // Мягкий «бульк» для капли дождя
+      playDrop() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(760, now + 0.14);
+
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.28, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.19);
+      }
+
+      // Хрустальный перезвон для снежинки
+      playSnow() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const freqs = [1174.66, 1567.98, 2093.0]; // D6, G6, C7
+        freqs.forEach((f, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          const start = now + idx * 0.04;
+          osc.frequency.setValueAtTime(f, start);
+
+          gain.gain.setValueAtTime(0.001, start);
+          gain.gain.linearRampToValueAtTime(0.16, start + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.36);
+        });
+      }
+
+      // Ледяной звонкий щелчок для градины
+      playHail() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1450, now);
+        osc.frequency.exponentialRampToValueAtTime(520, now + 0.09);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      }
+
+      // Мягкий звук удивления для отвлекающего предмета
+      playDistractor() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.linearRampToValueAtTime(240, now + 0.16);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.19);
+      }
+
+      // Победная мелодия
+      playVictory() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+        const times = [0, 0.11, 0.22, 0.34, 0.50, 0.64];
+
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          const t = now + times[i];
+          osc.frequency.setValueAtTime(freq, t);
+
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.3);
+        });
+      }
+
+      // Магический перелив трансформации цвета Луи
+      playMorph() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51];
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          const t = now + i * 0.065;
+          osc.frequency.setValueAtTime(freq, t);
+
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.linearRampToValueAtTime(0.18, t + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.34);
+        });
+      }
+
+      // Забавное «ква-ква» для лягушки
+      playRibbit() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+        [0, 0.14].forEach((offset, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          const t = now + offset;
+          osc.frequency.setValueAtTime(idx === 0 ? 190 : 220, t);
+          osc.frequency.exponentialRampToValueAtTime(idx === 0 ? 340 : 410, t + 0.09);
+
+          gain.gain.setValueAtTime(0.001, t);
+          gain.gain.linearRampToValueAtTime(0.14, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.12);
+        });
+      }
+    }
+
+    const sound = new SoundEffects();
+
+    // =========================================================================
+    // СОСТОЯНИЕ ИГРЫ, 5 РАУНДОВ И ЦВЕТОВАЯ ТРАНСФОРМАЦИЯ ЛУИ
+    // =========================================================================
+    const MAX_ROUNDS = 5;
+
+    const state = {
+      round: 1,
+      purpleSteps: 0, // Количество завершённых раундов (0 = 0%, 1 = 20%, ..., 5 = 100%)
+      targetPerType: 5,
+      collected: {
+        drop: 0,
+        snow: 0,
+        hail: 0
+      },
+      paused: false,
+      items: [],
+      lastSpawnTime: 0,
+      spawnInterval: 950,
+      lastFrameTime: 0,
+      speechTimeout: null,
+      moodTimeout: null,
+      frogsSpawnedTotal: 0, // Счётчик упавших за игру лягушек (чтобы гарантированно упало 2-3 раза)
+      nextFrogProgressTrigger: 3 // Порог собранных артефактов для первой лягушки
+    };
+
+    // Палитра стадий трансформации Луи от ярко-зелёного (шаг 0) до глубокого фиолетового (шаг 5+)
+    const LOUIS_STAGES = [
+      {
+        // Шаг 0 (Раунд 1 — 0% фиолетовости): классический ярко-зелёный Луи
+        percent: 0,
+        body0: '#a3e635', body1: '#84cc16', body2: '#4d7c0f',
+        stalk0: '#9be12c', stalk1: '#5d9412',
+        outline: '#4d7c0f', mouth: '#2f4809', mouthBg: '#365314',
+        highlight: '#d9f99d', shadow: '#3f6212', badgeBg: '#84cc16',
+        desc: 'Луи впитал первую порцию звёздной влаги и слегка побирюзовел!'
+      },
+      {
+        // Шаг 1 (после Раунда 1 — 20%): лаймово-бирюзовый
+        percent: 20,
+        body0: '#5eead4', body1: '#2dd4bf', body2: '#0f766e',
+        stalk0: '#5eead4', stalk1: '#14b8a6',
+        outline: '#0f766e', mouth: '#134e4a', mouthBg: '#115e59',
+        highlight: '#ccfbf1', shadow: '#115e59', badgeBg: '#14b8a6',
+        desc: 'Ого! Луи стал бирюзовым! Небесная магия меняет его окрас!'
+      },
+      {
+        // Шаг 2 (после Раунда 2 — 40%): небесно-голубой / васильковый
+        percent: 40,
+        body0: '#7dd3fc', body1: '#38bdf8', body2: '#0369a1',
+        stalk0: '#7dd3fc', stalk1: '#0284c7',
+        outline: '#0369a1', mouth: '#0c4a6e', mouthBg: '#075985',
+        highlight: '#e0f2fe', shadow: '#075985', badgeBg: '#0284c7',
+        desc: 'Луи уже наполовину на пути к фиолетовому — теперь он небесно-синий!'
+      },
+      {
+        // Шаг 3 (после Раунда 3 — 60%): насыщенный индиго
+        percent: 60,
+        body0: '#a5b4fc', body1: '#6366f1', body2: '#3730a3',
+        stalk0: '#a5b4fc', stalk1: '#4f46e5',
+        outline: '#3730a3', mouth: '#1e1b4b', mouthBg: '#312e81',
+        highlight: '#e0e7ff', shadow: '#312e81', badgeBg: '#4f46e5',
+        desc: 'Оттенок индиго! Луи почти полностью пропитался магией облаков!'
+      },
+      {
+        // Шаг 4 (после Раунда 4 — 80%): ярко-сиреневый / аметистовый
+        percent: 80,
+        body0: '#d8b4fe', body1: '#a855f7', body2: '#6b21a8',
+        stalk0: '#d8b4fe', stalk1: '#9333ea',
+        outline: '#6b21a8', mouth: '#3b0764', mouthBg: '#581c87',
+        highlight: '#f3e8ff', shadow: '#581c87', badgeBg: '#9333ea',
+        desc: 'Почти 100%! Луи теперь ярко-сиреневый и светится от радости!'
+      },
+      {
+        // Шаг 5+ (после Раунда 5+ — 100%): глубокий королевский фиолетовый
+        percent: 100,
+        body0: '#e879f9', body1: '#9333ea', body2: '#4c1d95',
+        stalk0: '#d946ef', stalk1: '#7e22ce',
+        outline: '#4c1d95', mouth: '#2e1065', mouthBg: '#4c1d95',
+        highlight: '#fae8ff', shadow: '#4c1d95', badgeBg: '#7e22ce',
+        desc: 'Максимальная фиолетовость 100%! Луи стал легендарным фиолетовым хранителем неба!'
+      }
+    ];
+
+    function getStageForSteps(steps) {
+      const idx = Math.min(steps, LOUIS_STAGES.length - 1);
+      return LOUIS_STAGES[idx];
+    }
+
+    function applyLouisPalette(steps, animateGlow = false) {
+      const palette = getStageForSteps(steps);
+
+      // Градиенты тела и стебельков
+      document.getElementById('bodyStop0').setAttribute('stop-color', palette.body0);
+      document.getElementById('bodyStop1').setAttribute('stop-color', palette.body1);
+      document.getElementById('bodyStop2').setAttribute('stop-color', palette.body2);
+
+      document.getElementById('stalkStop0').setAttribute('stop-color', palette.stalk0);
+      document.getElementById('stalkStop1').setAttribute('stop-color', palette.stalk1);
+
+      // Обводки частей тела, ног, рук и глазниц
+      document.getElementById('louisBodyPath').setAttribute('stroke', palette.outline);
+      document.getElementById('louisLegs').setAttribute('stroke', palette.outline);
+      document.getElementById('louisLeftArm').setAttribute('stroke', palette.outline);
+      document.getElementById('louisRightArm').setAttribute('stroke', palette.outline);
+      document.getElementById('rightArmFill').setAttribute('stroke', palette.body1);
+      document.getElementById('rightArmOutline').setAttribute('stroke', palette.outline);
+      document.getElementById('leftEyeRim').setAttribute('stroke', palette.outline);
+      document.getElementById('rightEyeRim').setAttribute('stroke', palette.outline);
+
+      // Знак вопроса, блик, тень и детали рта
+      document.getElementById('qMarkPath').setAttribute('stroke', palette.body1);
+      document.getElementById('qMarkDot').setAttribute('fill', palette.body1);
+      document.getElementById('louisHighlight').setAttribute('fill', palette.highlight);
+      document.getElementById('groundShadow').setAttribute('fill', palette.shadow);
+
+      document.getElementById('mouthLine').setAttribute('stroke', palette.mouth);
+      document.getElementById('toothLeft').setAttribute('stroke', palette.outline);
+      document.getElementById('toothRight').setAttribute('stroke', palette.outline);
+      document.getElementById('mouthHappyBg').setAttribute('fill', palette.mouthBg);
+      document.getElementById('mouthHappyBg').setAttribute('stroke', palette.mouth);
+      document.getElementById('toothHappyL').setAttribute('stroke', palette.outline);
+      document.getElementById('toothHappyR').setAttribute('stroke', palette.outline);
+
+      // Обновление индикаторов в шапке
+      document.getElementById('roundNumberText').textContent = state.round;
+      const badgeIcon = document.getElementById('roundBadgeIcon');
+      badgeIcon.textContent = state.round;
+      badgeIcon.style.backgroundColor = palette.badgeBg;
+
+      document.getElementById('purplePercentText').textContent = `${palette.percent}%`;
+      document.getElementById('purpleBarLabel').textContent = `${palette.percent}%`;
+      document.getElementById('purpleProgressBar').style.width = `${palette.percent}%`;
+
+      // Рамка речевого облачка тоже подстраивается под цвет Луи
+      if (louisSpeech) {
+        louisSpeech.style.borderColor = palette.body1;
+      }
+
+      if (animateGlow) {
+        louisContainer.classList.remove('louis-morphing');
+        void louisContainer.offsetWidth;
+        louisContainer.classList.add('louis-morphing');
+        setTimeout(() => louisContainer.classList.remove('louis-morphing'), 1000);
+      }
+    }
+
+    // DOM-элементы
+    const gameArea = document.getElementById('gameArea');
+    const louisContainer = document.getElementById('louisContainer');
+    const louisSpeech = document.getElementById('louisSpeech');
+    const mouthThinking = document.getElementById('mouthThinking');
+    const mouthHappy = document.getElementById('mouthHappy');
+    const leftPupil = document.getElementById('leftPupil');
+    const rightPupil = document.getElementById('rightPupil');
+    const questionMark = document.getElementById('questionMark');
+    const victoryModal = document.getElementById('victoryModal');
+    const helpModal = document.getElementById('helpModal');
+
+    // Фразы Луи (включая реплики о том, что он фиолетовеет)
+    const phrases = {
+      drop: [
+        'Бульк! Чистая дождевая капля!',
+        'Ура! Капелька в коллекции!',
+        'Чувствую, как капля дарит мне фиолетовый отлив!'
+      ],
+      snow: [
+        'Дзинь! Волшебная снежинка!',
+        'Ух ты, ледяной узор!',
+        'От снежинок я становлюсь всё фиолетовее!'
+      ],
+      hail: [
+        'Клац! Настоящая градина!',
+        'Ого, ледяной шарик!',
+        'Магия града меняет мой цвет!'
+      ],
+      distractor: [
+        'Ой, это же просто листик!',
+        'Хи-хи, это не артефакт!',
+        'Мимо! Ищем капли, снег и град!'
+      ],
+      frog: [
+        'Ква-а?! Откуда с неба лягушка?!',
+        'Ого! Поскакала по своим делам!',
+        'Хи-хи, какая прыгучая гостья!'
+      ]
+    };
+
+    // =========================================================================
+    // SVG-ШАБЛОНЫ ПАДАЮЩИХ ОБЪЕКТОВ И ЛЯГУШКИ
+    // =========================================================================
+    function getFrogSVG() {
+      return `
+        <svg viewBox="0 0 80 70" class="w-full h-full overflow-visible">
+          <!-- Задние лапки -->
+          <path d="M18 46 C8 46 6 56 14 60 L24 60" fill="#16a34a" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M62 46 C72 46 74 56 66 60 L56 60" fill="#16a34a" stroke="#14532d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Тело лягушки -->
+          <ellipse cx="40" cy="43" rx="23" ry="17" fill="#22c55e" stroke="#14532d" stroke-width="2.5"/>
+          <!-- Светлое пузико -->
+          <ellipse cx="40" cy="47" rx="14" ry="10" fill="#bbf7d0"/>
+          <!-- Передние лапки -->
+          <path d="M27 48 L23 61 M20 61 L26 61" stroke="#14532d" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M53 48 L57 61 M54 61 L60 61" stroke="#14532d" stroke-width="2.6" stroke-linecap="round"/>
+          <!-- Выпуклые глазки сверху -->
+          <circle cx="29" cy="24" r="9.5" fill="#22c55e" stroke="#14532d" stroke-width="2.5"/>
+          <circle cx="51" cy="24" r="9.5" fill="#22c55e" stroke="#14532d" stroke-width="2.5"/>
+          <circle cx="29" cy="24" r="6.2" fill="#ffffff"/>
+          <circle cx="51" cy="24" r="6.2" fill="#ffffff"/>
+          <circle cx="30.5" cy="23.5" r="3" fill="#0f172a"/>
+          <circle cx="52.5" cy="23.5" r="3" fill="#0f172a"/>
+          <circle cx="31.5" cy="22" r="1.2" fill="#ffffff"/>
+          <circle cx="53.5" cy="22" r="1.2" fill="#ffffff"/>
+          <!-- Румянец и широкая улыбка -->
+          <ellipse cx="22" cy="36" rx="3.2" ry="1.8" fill="#f472b6" opacity="0.7"/>
+          <ellipse cx="58" cy="36" rx="3.2" ry="1.8" fill="#f472b6" opacity="0.7"/>
+          <path d="M26 38 Q40 46 54 38" fill="none" stroke="#14532d" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>`;
+    }
+
+    function getObjectSVG(type) {
+      switch (type) {
+        case 'frog':
+          return getFrogSVG();
+        case 'drop':
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full">
+              <path d="M30 6 C30 6 12 26 12 39 C12 48.9 20.1 56 30 56 C39.9 56 48 48.9 48 39 C48 26 30 6 30 6 Z"
+                    fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2"/>
+              <path d="M30 9 C30 9 15 27 15 39 C15 47 21.5 53 30 53 C38.5 53 45 47 45 39 C45 27 30 9 30 9 Z"
+                    fill="#38bdf8" opacity="0.65"/>
+              <ellipse cx="22" cy="35" rx="3.5" ry="7.5" transform="rotate(-18 22 35)" fill="#ffffff" opacity="0.88"/>
+              <circle cx="24" cy="45" r="2" fill="#ffffff" opacity="0.8"/>
+            </svg>`;
+
+        case 'snow':
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full" fill="none">
+              <circle cx="30" cy="30" r="24" fill="#eef2ff" opacity="0.35"/>
+              <g stroke="#ffffff" stroke-width="4.5" stroke-linecap="round">
+                <line x1="30" y1="6" x2="30" y2="54"/>
+                <line x1="9.2" y1="18" x2="50.8" y2="42"/>
+                <line x1="50.8" y1="18" x2="9.2" y2="42"/>
+              </g>
+              <g stroke="#4f46e5" stroke-width="2.6" stroke-linecap="round">
+                <line x1="30" y1="7" x2="30" y2="53"/>
+                <line x1="10" y1="18.5" x2="50" y2="41.5"/>
+                <line x1="50" y1="18.5" x2="10" y2="41.5"/>
+                <polyline points="24,13 30,19 36,13"/>
+                <polyline points="24,47 30,41 36,47"/>
+                <polyline points="13,25 20,24 18,17"/>
+                <polyline points="47,35 40,36 42,43"/>
+                <polyline points="42,17 40,24 47,25"/>
+                <polyline points="18,43 20,36 13,35"/>
+              </g>
+              <circle cx="30" cy="30" r="4.5" fill="#e0e7ff" stroke="#4f46e5" stroke-width="2"/>
+            </svg>`;
+
+        case 'hail':
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full">
+              <circle cx="30" cy="30" r="21" fill="#22d3ee" stroke="#ecfeff" stroke-width="2.5"/>
+              <circle cx="30" cy="30" r="18" fill="#67e8f9" opacity="0.75"/>
+              <polygon points="30,12 42,22 38,40 21,41 16,24" fill="#ffffff" opacity="0.45"/>
+              <polygon points="30,16 37,24 33,35 23,34 21,24" fill="#cffafe" opacity="0.65"/>
+              <circle cx="22" cy="21" r="4.2" fill="#ffffff" opacity="0.95"/>
+              <circle cx="37" cy="38" r="2.2" fill="#ffffff" opacity="0.8"/>
+            </svg>`;
+
+        case 'leaf':
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full">
+              <path d="M14 44 C14 22 30 10 48 12 C48 30 36 46 14 44 Z" fill="#f97316" stroke="#c2410c" stroke-width="2"/>
+              <path d="M12 48 L42 18" stroke="#9a3412" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M24 36 L23 26 M31 29 L39 30" stroke="#fed7aa" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>`;
+
+        case 'feather':
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full">
+              <path d="M45 12 C32 12 18 24 15 43 C28 42 42 30 45 12 Z" fill="#fef08a" stroke="#eab308" stroke-width="2"/>
+              <path d="M12 48 L43 14" stroke="#ca8a04" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>`;
+
+        default: // star
+          return `
+            <svg viewBox="0 0 60 60" class="w-full h-full">
+              <polygon points="30,8 36,22 51,23 40,33 43,48 30,40 17,48 20,33 9,23 24,22"
+                       fill="#fde047" stroke="#eab308" stroke-width="2" stroke-linejoin="round"/>
+            </svg>`;
+      }
+    }
+
+    // =========================================================================
+    // РЕАКЦИИ ЛУИ И ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+    // =========================================================================
+    function updateUI() {
+      const target = state.targetPerType;
+      ['drop', 'snow', 'hail'].forEach(type => {
+        const count = Math.min(state.collected[type], target);
+        const countEl = document.getElementById(`count-${type}`);
+        const barEl = document.getElementById(`bar-${type}`);
+
+        countEl.textContent = `${count}/${target}`;
+        barEl.style.width = `${(count / target) * 100}%`;
+      });
+    }
+
+    function setLouisReaction(type) {
+      louisContainer.classList.remove('louis-idle', 'louis-happy', 'louis-surprised');
+      void louisContainer.offsetWidth;
+
+      clearTimeout(state.moodTimeout);
+      clearTimeout(state.speechTimeout);
+
+      const list = phrases[type] || phrases.drop;
+      louisSpeech.textContent = list[Math.floor(Math.random() * list.length)];
+
+      if (type === 'distractor' || type === 'frog') {
+        louisContainer.classList.add('louis-surprised');
+        mouthThinking.classList.remove('hidden');
+        mouthHappy.classList.add('hidden');
+      } else {
+        louisContainer.classList.add('louis-happy');
+        mouthThinking.classList.add('hidden');
+        mouthHappy.classList.remove('hidden');
+        questionMark.style.opacity = '0.2';
+      }
+
+      state.moodTimeout = setTimeout(() => {
+        louisContainer.classList.remove('louis-happy', 'louis-surprised');
+        louisContainer.classList.add('louis-idle');
+        mouthThinking.classList.remove('hidden');
+        mouthHappy.classList.add('hidden');
+        questionMark.style.opacity = '1';
+      }, 950);
+
+      state.speechTimeout = setTimeout(() => {
+        const target = state.targetPerType;
+        const remDrop = Math.max(0, target - state.collected.drop);
+        const remSnow = Math.max(0, target - state.collected.snow);
+        const remHail = Math.max(0, target - state.collected.hail);
+        const totalRem = remDrop + remSnow + remHail;
+        if (totalRem > 0) {
+          louisSpeech.textContent = `Раунд ${state.round} из ${MAX_ROUNDS}: осталось поймать ${totalRem} шт.!`;
+        }
+      }, 2400);
+    }
+
+    function updatePupils(targetX, targetY) {
+      const rect = louisContainer.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height * 0.25;
+
+      const dx = Math.max(-1, Math.min(1, (targetX - centerX) / 260));
+      const dy = Math.max(-1, Math.min(0.4, (targetY - centerY) / 260));
+
+      const offsetX = dx * 5.5;
+      const offsetY = dy * 5.5;
+
+      leftPupil.setAttribute('transform', `translate(${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})`);
+      rightPupil.setAttribute('transform', `translate(${offsetX.toFixed(1)}, ${offsetY.toFixed(1)})`);
+    }
+
+    window.addEventListener('pointermove', (e) => {
+      updatePupils(e.clientX, e.clientY);
+    });
+
+    // =========================================================================
+    // ВИЗУАЛЬНЫЕ ЭФФЕКТЫ (ВСПЛЫВАЮЩИЙ ТЕКСТ, ПОЛЁТ АРТЕФАКТОВ И КОНФЕТТИ)
+    // =========================================================================
+    function createFeedbackPopup(x, y, text, colorClass = 'text-sky-700') {
+      const popup = document.createElement('div');
+      popup.className = `floating-feedback ${colorClass}`;
+      popup.style.left = `${x}px`;
+      popup.style.top = `${y}px`;
+      popup.textContent = text;
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 900);
+    }
+
+    function flyArtifactToSlot(sourceRect, type, svgHTML) {
+      const slotEl = document.getElementById(`slot-${type}`);
+      if (!slotEl) return;
+
+      const targetRect = slotEl.getBoundingClientRect();
+      const clone = document.createElement('div');
+      clone.className = 'flying-clone';
+      clone.style.left = `${sourceRect.left}px`;
+      clone.style.top = `${sourceRect.top}px`;
+      clone.style.width = `${sourceRect.width}px`;
+      clone.style.height = `${sourceRect.height}px`;
+      clone.innerHTML = svgHTML;
+      document.body.appendChild(clone);
+
+      // Принудительный reflow перед стартом CSS-анимации перелёта
+      void clone.offsetWidth;
+
+      const destX = targetRect.left + targetRect.width * 0.25;
+      const destY = targetRect.top + targetRect.height * 0.25;
+      clone.style.left = `${destX}px`;
+      clone.style.top = `${destY}px`;
+      clone.style.width = '28px';
+      clone.style.height = '28px';
+      clone.style.opacity = '0.2';
+
+      setTimeout(() => {
+        clone.remove();
+        slotEl.classList.remove('slot-pulse');
+        void slotEl.offsetWidth;
+        slotEl.classList.add('slot-pulse');
+      }, 540);
+    }
+
+    function launchConfetti() {
+      const colors = ['#a855f7', '#38bdf8', '#facc15', '#4ade80', '#f472b6', '#818cf8'];
+      for (let i = 0; i < 42; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece rounded-sm';
+        const size = 7 + Math.random() * 7;
+        piece.style.width = `${size}px`;
+        piece.style.height = `${size * 0.6}px`;
+        piece.style.left = `${Math.random() * 100}vw`;
+        piece.style.backgroundColor = colors[i % colors.length];
+        piece.style.animationDuration = `${1.8 + Math.random() * 1.8}s`;
+        piece.style.animationDelay = `${Math.random() * 0.4}s`;
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 4000);
+      }
+    }
+
+    // =========================================================================
+    // АНИМАЦИЯ ПРЫЖКОВ ЛЯГУШКИ В СТОРОНУ ПОСЛЕ ПАДЕНИЯ С НЕБА
+    // =========================================================================
+    function launchHoppingFrog(startX, groundY) {
+      const frogSize = window.innerWidth < 640 ? 58 : 68;
+      const frogEl = document.createElement('div');
+      frogEl.className = 'hopping-frog';
+      frogEl.style.width = `${frogSize}px`;
+      frogEl.style.height = `${frogSize * 0.88}px`;
+      frogEl.innerHTML = getFrogSVG();
+      document.body.appendChild(frogEl);
+
+      // Выбираем направление, куда поскачет лягушка (в сторону ближайшего или дальнего края)
+      const dir = startX < window.innerWidth * 0.5 ? 1 : -1;
+      const flipScale = dir === 1 ? 1 : -1;
+
+      sound.playRibbit();
+      setLouisReaction('frog');
+      createFeedbackPopup(startX + frogSize / 2, groundY - 12, 'Ква-ква! 🐸', 'text-emerald-700');
+
+      let posX = startX;
+      const baseTop = groundY - frogSize * 0.55;
+      let hopTime = 0;
+      let lastTime = performance.now();
+      const hopSpeedX = (window.innerWidth < 640 ? 155 : 210) * dir;
+      const hopFrequency = 7.5; // частота прыжков
+      const hopHeight = 36;
+
+      function animateHop(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        if (!state.paused) {
+          hopTime += dt;
+          posX += hopSpeedX * dt;
+
+          // Параболическая дуга прыжка: |sin(...)|
+          const sinVal = Math.abs(Math.sin(hopTime * hopFrequency));
+          const jumpOffsetY = sinVal * hopHeight;
+          const stretchY = 0.88 + sinVal * 0.24;
+          const stretchX = 1.12 - sinVal * 0.18;
+          const tilt = dir * (Math.cos(hopTime * hopFrequency) * 12);
+
+          frogEl.style.left = `${posX}px`;
+          frogEl.style.top = `${baseTop - jumpOffsetY}px`;
+          frogEl.style.transform = `scaleX(${flipScale * stretchX}) scaleY(${stretchY}) rotate(${tilt}deg)`;
+        }
+
+        // Пока лягушка не ускакала за край экрана — продолжаем анимацию
+        if (posX > -frogSize - 40 && posX < window.innerWidth + 40) {
+          requestAnimationFrame(animateHop);
+        } else {
+          frogEl.remove();
+        }
+      }
+
+      requestAnimationFrame(animateHop);
+    }
+
+    // =========================================================================
+    // СПАВН И ОБРАБОТКА ПАДАЮЩИХ ОБЪЕКТОВ
+    // =========================================================================
+    function chooseNextObjectType() {
+      // Проверяем, не пора ли выпустить с неба лягушку (ровно пару-тройку раз за 5 раундов)
+      const totalCollectedNow =
+        (state.round - 1) * 15 +
+        state.collected.drop +
+        state.collected.snow +
+        state.collected.hail;
+
+      if (state.frogsSpawnedTotal < 3 && totalCollectedNow >= state.nextFrogProgressTrigger) {
+        state.frogsSpawnedTotal += 1;
+        // Следующая лягушка появится примерно через 12–16 собранных артефактов
+        state.nextFrogProgressTrigger = totalCollectedNow + 12 + Math.floor(Math.random() * 5);
+        return 'frog';
+      }
+
+      const isTarget = Math.random() < 0.76;
+      if (!isTarget) {
+        const distractors = ['leaf', 'feather', 'star'];
+        return distractors[Math.floor(Math.random() * distractors.length)];
+      }
+
+      const needed = [];
+      ['drop', 'snow', 'hail'].forEach(t => {
+        const rem = Math.max(1, state.targetPerType - state.collected[t]);
+        for (let i = 0; i < rem; i++) needed.push(t);
+      });
+      return needed[Math.floor(Math.random() * needed.length)];
+    }
+
+    function spawnItem() {
+      const type = chooseNextObjectType();
+      const isTarget = ['drop', 'snow', 'hail'].includes(type);
+      const isFrog = type === 'frog';
+      const size = isFrog
+        ? (window.innerWidth < 640 ? 58 : 68)
+        : (window.innerWidth < 640 ? 54 : 64);
+
+      const margin = 32;
+      const x = margin + Math.random() * (window.innerWidth - size - margin * 2);
+      const y = 95;
+
+      const el = document.createElement('div');
+      el.className = 'falling-item';
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      const svgHTML = getObjectSVG(type);
+      el.innerHTML = svgHTML;
+
+      // Скорость слегка увеличивается с каждым раундом
+      const speedBonus = (state.round - 1) * 14;
+
+      const itemObj = {
+        id: Math.random().toString(36).slice(2),
+        type,
+        isTarget,
+        isFrog,
+        x,
+        y,
+        size,
+        speedY: isFrog ? 155 : ((isTarget ? 95 : 80) + speedBonus + Math.random() * 55),
+        swayAmp: isFrog ? 6 : (type === 'leaf' || type === 'feather' ? 36 : 14),
+        swayFreq: 1.5 + Math.random() * 1.5,
+        phase: Math.random() * Math.PI * 2,
+        rotSpeed: isFrog ? 0 : (Math.random() - 0.5) * 90,
+        rotation: 0,
+        el,
+        collected: false
+      };
+
+      const handleTap = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (itemObj.collected || state.paused) return;
+
+        // Если нажали на падающую лягушку — она квакает и сразу убегает в сторону!
+        if (itemObj.isFrog) {
+          itemObj.collected = true;
+          const rect = el.getBoundingClientRect();
+          const groundY = window.innerHeight - 65;
+          el.remove();
+          state.items = state.items.filter(i => i.id !== itemObj.id);
+          launchHoppingFrog(rect.left, Math.min(groundY, rect.top + 30));
+          return;
+        }
+
+        itemObj.collected = true;
+
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        updatePupils(centerX, centerY);
+
+        if (itemObj.isTarget) {
+          if (type === 'drop') sound.playDrop();
+          if (type === 'snow') sound.playSnow();
+          if (type === 'hail') sound.playHail();
+
+          state.collected[type] += 1;
+          updateUI();
+          setLouisReaction(type);
+
+          const labelMap = {
+            drop: '+1 Капля! 💧',
+            snow: '+1 Снежинка! ❄️',
+            hail: '+1 Градина! 🧊'
+          };
+          const colorMap = {
+            drop: 'text-sky-700',
+            snow: 'text-indigo-700',
+            hail: 'text-cyan-700'
+          };
+
+          createFeedbackPopup(centerX, centerY, labelMap[type], colorMap[type]);
+          flyArtifactToSlot(rect, type, svgHTML);
+
+          const target = state.targetPerType;
+          if (state.collected.drop >= target &&
+              state.collected.snow >= target &&
+              state.collected.hail >= target) {
+            triggerRoundVictory();
+          }
+        } else {
+          sound.playDistractor();
+          setLouisReaction('distractor');
+          createFeedbackPopup(centerX, centerY, 'Ой, не то! 🍂', 'text-amber-700');
+        }
+
+        el.remove();
+        state.items = state.items.filter(i => i.id !== itemObj.id);
+      };
+
+      el.addEventListener('pointerdown', handleTap);
+      gameArea.appendChild(el);
+      state.items.push(itemObj);
+    }
+
+    function renderModalLouisPreview(prevSteps, nextSteps) {
+      const slot = document.getElementById('modalPreviewSlot');
+      slot.innerHTML = '';
+
+      const prevPalette = getStageForSteps(prevSteps);
+      const nextPalette = getStageForSteps(nextSteps);
+
+      // Клонируем основного SVG Луи, но делаем уникальные id градиентов для превью
+      const cloneSvg = document.getElementById('louisSvg').cloneNode(true);
+      cloneSvg.removeAttribute('id');
+      cloneSvg.setAttribute('class', 'w-full h-full overflow-visible');
+
+      // Переименовываем id внутри клона, чтобы не конфликтовать с основным SVG
+      const bodyGrad = cloneSvg.querySelector('#louisBodyGrad');
+      const stalkGrad = cloneSvg.querySelector('#louisStalkGrad');
+      const shadowUse = cloneSvg.querySelector('use');
+      const groundShadow = cloneSvg.querySelector('#groundShadow');
+
+      if (bodyGrad) bodyGrad.id = 'modalLouisBodyGrad';
+      if (stalkGrad) stalkGrad.id = 'modalLouisStalkGrad';
+      if (groundShadow) groundShadow.id = 'modalGroundShadow';
+      if (shadowUse) shadowUse.setAttribute('href', '#modalGroundShadow');
+
+      cloneSvg.querySelectorAll('[fill="url(#louisBodyGrad)"]').forEach(el => {
+        el.setAttribute('fill', 'url(#modalLouisBodyGrad)');
+      });
+      cloneSvg.querySelectorAll('[fill="url(#louisStalkGrad)"]').forEach(el => {
+        el.setAttribute('fill', 'url(#modalLouisStalkGrad)');
+      });
+
+      // Улыбка на превью
+      const mThink = cloneSvg.querySelector('#mouthThinking');
+      const mHappy = cloneSvg.querySelector('#mouthHappy');
+      if (mThink) mThink.classList.add('hidden');
+      if (mHappy) mHappy.classList.remove('hidden');
+
+      // Функция установки палитры в клон
+      const setCloneColors = (pal) => {
+        const bs0 = cloneSvg.querySelector('#bodyStop0');
+        const bs1 = cloneSvg.querySelector('#bodyStop1');
+        const bs2 = cloneSvg.querySelector('#bodyStop2');
+        const ss0 = cloneSvg.querySelector('#stalkStop0');
+        const ss1 = cloneSvg.querySelector('#stalkStop1');
+
+        if (bs0) bs0.setAttribute('stop-color', pal.body0);
+        if (bs1) bs1.setAttribute('stop-color', pal.body1);
+        if (bs2) bs2.setAttribute('stop-color', pal.body2);
+        if (ss0) ss0.setAttribute('stop-color', pal.stalk0);
+        if (ss1) ss1.setAttribute('stop-color', pal.stalk1);
+
+        ['#louisBodyPath', '#louisLegs', '#louisLeftArm', '#louisRightArm', '#rightArmOutline', '#leftEyeRim', '#rightEyeRim', '#toothHappyL', '#toothHappyR'].forEach(sel => {
+          const node = cloneSvg.querySelector(sel);
+          if (node) node.setAttribute('stroke', pal.outline);
+        });
+        const rArmFill = cloneSvg.querySelector('#rightArmFill');
+        if (rArmFill) rArmFill.setAttribute('stroke', pal.body1);
+
+        const qPath = cloneSvg.querySelector('#qMarkPath');
+        const qDot = cloneSvg.querySelector('#qMarkDot');
+        if (qPath) qPath.setAttribute('stroke', pal.body1);
+        if (qDot) qDot.setAttribute('fill', pal.body1);
+      };
+
+      // Сначала ставим предыдущий цвет, а через мгновение плавно перекрашиваем в новый!
+      setCloneColors(prevPalette);
+      slot.appendChild(cloneSvg);
+
+      document.getElementById('modalPrevPercent').textContent = `${prevPalette.percent}%`;
+      document.getElementById('modalNewPercent').textContent = `${nextPalette.percent}%`;
+      document.getElementById('modalPurpleBar').style.width = `${prevPalette.percent}%`;
+      document.getElementById('modalMorphDesc').textContent = nextPalette.desc;
+
+      setTimeout(() => {
+        setCloneColors(nextPalette);
+        document.getElementById('modalPurpleBar').style.width = `${nextPalette.percent}%`;
+        slot.classList.remove('louis-morphing');
+        void slot.offsetWidth;
+        slot.classList.add('louis-morphing');
+        sound.playMorph();
+      }, 320);
+    }
+
+    function triggerRoundVictory() {
+      state.paused = true;
+      sound.playVictory();
+      launchConfetti();
+
+      const prevSteps = state.purpleSteps;
+      state.purpleSteps += 1;
+
+      // Обновляем самого Луи на сцене с эффектом свечения
+      applyLouisPalette(state.purpleSteps, true);
+
+      const isFinalRound = state.round >= MAX_ROUNDS;
+
+      document.getElementById('modalRoundNum').textContent = state.round;
+      document.getElementById('statDrops').textContent = state.collected.drop;
+      document.getElementById('statSnow').textContent = state.collected.snow;
+      document.getElementById('statHail').textContent = state.collected.hail;
+
+      const modalTopEmoji = document.getElementById('modalTopEmoji');
+      const modalTitle = document.getElementById('modalTitle');
+      const nextRoundBtn = document.getElementById('nextRoundBtn');
+      const restartGameBtn = document.getElementById('restartGameBtn');
+
+      if (isFinalRound) {
+        modalTopEmoji.textContent = '🏆';
+        modalTitle.innerHTML = 'Все 5 раундов пройдены!';
+        nextRoundBtn.classList.add('hidden');
+        restartGameBtn.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700', 'border-slate-300');
+        restartGameBtn.classList.add('flex-1', 'bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'hover:from-purple-700', 'hover:to-indigo-700', 'text-white', 'shadow-lg', 'shadow-purple-500/30', 'border-transparent');
+        restartGameBtn.textContent = 'Сыграть заново (5 раундов)';
+      } else {
+        modalTopEmoji.textContent = '✨';
+        modalTitle.innerHTML = `Раунд <span id="modalRoundNum">${state.round}</span> из ${MAX_ROUNDS} пройден!`;
+        nextRoundBtn.classList.remove('hidden');
+        restartGameBtn.classList.remove('flex-1', 'bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'hover:from-purple-700', 'hover:to-indigo-700', 'text-white', 'shadow-lg', 'shadow-purple-500/30', 'border-transparent');
+        restartGameBtn.classList.add('bg-slate-100', 'hover:bg-slate-200', 'text-slate-700', 'border-slate-300');
+        restartGameBtn.textContent = 'Сбросить с начала';
+      }
+
+      setTimeout(() => {
+        victoryModal.classList.remove('hidden');
+        victoryModal.classList.add('flex');
+        renderModalLouisPreview(prevSteps, state.purpleSteps);
+      }, 450);
+    }
+
+    function startNextRound() {
+      if (state.round >= MAX_ROUNDS) return;
+
+      state.round += 1;
+      // Слегка увеличиваем цель коллекции с каждым раундом (5 -> 6 -> 7 -> 8 -> 9)
+      state.targetPerType = 5 + (state.round - 1);
+      state.collected = { drop: 0, snow: 0, hail: 0 };
+      state.paused = false;
+
+      // Очищаем поле
+      state.items.forEach(item => item.el.remove());
+      state.items = [];
+
+      const palette = getStageForSteps(state.purpleSteps);
+      document.getElementById('modeSubtitle').textContent = `Раунд ${state.round} из ${MAX_ROUNDS}: собери по ${state.targetPerType} артефактов!`;
+      louisSpeech.textContent = `Ух ты, я теперь фиолетовый на ${palette.percent}%! Вперёд в раунд ${state.round}!`;
+
+      applyLouisPalette(state.purpleSteps, false);
+      updateUI();
+
+      victoryModal.classList.add('hidden');
+      victoryModal.classList.remove('flex');
+    }
+
+    function resetFromBeginning() {
+      state.round = 1;
+      state.purpleSteps = 0;
+      state.targetPerType = 5;
+      state.collected = { drop: 0, snow: 0, hail: 0 };
+      state.paused = false;
+      state.frogsSpawnedTotal = 0;
+      state.nextFrogProgressTrigger = 3;
+
+      state.items.forEach(item => item.el.remove());
+      state.items = [];
+      document.querySelectorAll('.hopping-frog').forEach(el => el.remove());
+
+      document.getElementById('modeSubtitle').textContent = 'Нажимай на капли, снежинки и градины!';
+      louisSpeech.textContent = 'Я снова зелёный! Пройдём все 5 раундов?';
+
+      applyLouisPalette(0, true);
+      updateUI();
+
+      victoryModal.classList.add('hidden');
+      victoryModal.classList.remove('flex');
+    }
+
+    // =========================================================================
+    // ИГРОВОЙ ЦИКЛ
+    // =========================================================================
+    function gameLoop(timestamp) {
+      if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+      const dt = Math.min(0.05, (timestamp - state.lastFrameTime) / 1000);
+      state.lastFrameTime = timestamp;
+
+      if (!state.paused) {
+        if (timestamp - state.lastSpawnTime > state.spawnInterval) {
+          spawnItem();
+          state.lastSpawnTime = timestamp;
+          const baseInterval = Math.max(520, 780 - (state.round - 1) * 45);
+          state.spawnInterval = baseInterval + Math.random() * 420;
+        }
+
+        const groundY = window.innerHeight - 65;
+
+        for (let i = state.items.length - 1; i >= 0; i--) {
+          const item = state.items[i];
+          item.y += item.speedY * dt;
+          item.phase += item.swayFreq * dt;
+          item.rotation += item.rotSpeed * dt;
+
+          const currentX = item.x + Math.sin(item.phase) * item.swayAmp;
+          const clampedX = Math.max(8, Math.min(window.innerWidth - item.size - 8, currentX));
+
+          item.el.style.left = `${clampedX}px`;
+          item.el.style.top = `${item.y}px`;
+          if (!item.isFrog && (!item.isTarget || item.type === 'snow')) {
+            item.el.style.transform = `rotate(${item.rotation}deg)`;
+          }
+
+          if (item.y > groundY) {
+            item.el.remove();
+            state.items.splice(i, 1);
+
+            // Если упала лягушка — она приземляется на траву и поскачет в сторону!
+            if (item.isFrog) {
+              launchHoppingFrog(clampedX, groundY);
+            }
+          }
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // =========================================================================
+    // ОБРАБОТЧИКИ КНОПОК ИНТЕРФЕЙСА
+    // =========================================================================
+    document.getElementById('soundToggleBtn').addEventListener('click', () => {
+      const isOn = sound.toggle();
+      document.getElementById('soundOnIcon').classList.toggle('hidden', !isOn);
+      document.getElementById('soundOffIcon').classList.toggle('hidden', isOn);
+    });
+
+    document.getElementById('helpBtn').addEventListener('click', () => {
+      state.paused = true;
+      helpModal.classList.remove('hidden');
+      helpModal.classList.add('flex');
+    });
+
+    document.getElementById('closeHelpBtn').addEventListener('click', () => {
+      sound.init();
+      state.paused = false;
+      helpModal.classList.add('hidden');
+      helpModal.classList.remove('flex');
+    });
+
+    document.getElementById('nextRoundBtn').addEventListener('click', () => {
+      startNextRound();
+    });
+
+    document.getElementById('restartGameBtn').addEventListener('click', () => {
+      resetFromBeginning();
+    });
+
+    // Запуск при загрузке окна
+    window.onload = function () {
+      applyLouisPalette(0, false);
+      updateUI();
+      spawnItem();
+      setTimeout(spawnItem, 450);
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
